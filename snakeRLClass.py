@@ -22,7 +22,6 @@ class Snake:
         return pygame.Rect.collidelist(self.head, self.body[:-1]) != -1
 
     def death(self):
-        self.head.topleft = (0, 0)
         self.body[:] = [self.head.copy()]
         self.direction.update(0, 0)
         self.length = 1
@@ -60,8 +59,8 @@ class Environment:
         return randrange(*self.range), randrange(*self.range)
 
     def rerun(self):
-        self.snake.head.center, self.reward.core.center = self.getRandomPos(), self.getRandomPos()
         self.snake.death()
+        self.snake.head.center, self.reward.core.center = self.getRandomPos(), self.getRandomPos()
         self.score = 0
         #self.done = True
         return 1
