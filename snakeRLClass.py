@@ -1,5 +1,6 @@
 import pygame
 from random import randrange
+import numpy as np
 
 class Snake:
     def __init__(self, tileSize, pos):
