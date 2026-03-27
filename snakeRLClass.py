@@ -72,6 +72,28 @@ class Environment:
         pygame.draw.rect(self.screen, 'red', self.reward.core)
 
 
+class EpsilonGreedy:
+    def __init__(self, epsilon, num_of_arms):
+        self.num_of_arms = num_of_arms
+        # self.t = 0
+        self.epsilon = epsilon
+        self.count = np.zeros(num_of_arms)
+        self.q_estimate = np.zeros(num_of_arms)
+        #self.rewards = [[] for _ in range(num_of_arms)]
+
+    def action(self):
+        if np.random.rand() < self.epsilon:
+            action = np.random.randint(self.num_of_arms) #explore
+        else:
+            action = np.argmax(self.q_estimate) #exploit
+        # self.t += 1
+        return action
+
+    def learn(self, action, reward):
+        self.count[action] += 1
+        self.q_estimate[action] += (reward - self.q_estimate[action]) / self.count[action] #sample update
+
+
 # game loop vars
 pygame.init()
 
