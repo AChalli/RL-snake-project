@@ -73,26 +73,25 @@ class Environment:
         pygame.draw.rect(self.screen, 'red', self.reward.core)
 
 
-class EpsilonGreedy:
-    def __init__(self, epsilon, num_of_arms):
-        self.num_of_arms = num_of_arms
-        # self.t = 0
+class QLearningAgent:
+    def __init__(self, env, epsilon=0.1, alpha=0.5, gamma=1.0):
+        self.Q = np.zeros((env.rows, env.cols, 4))
         self.epsilon = epsilon
-        self.count = np.zeros(num_of_arms)
-        self.q_estimate = np.zeros(num_of_arms)
-        #self.rewards = [[] for _ in range(num_of_arms)]
+        self.alpha = alpha
+        self.gamma = gamma
 
-    def action(self):
+    def act(self, s):
         if np.random.rand() < self.epsilon:
-            action = np.random.randint(self.num_of_arms) #explore
-        else:
-            action = np.argmax(self.q_estimate) #exploit
-        # self.t += 1
-        return action
+            return np.random.randint(4)
+        return int(np.argmax(self.Q[s]))
 
-    def learn(self, action, reward):
-        self.count[action] += 1
-        self.q_estimate[action] += (reward - self.q_estimate[action]) / self.count[action] #sample update
+    def update(self, s, a, r, s2, done):
+        if done:
+            target = r
+        else:
+            target = r + self.gamma * np.max(self.Q[s2])
+        self.Q[s][a] += self.alpha * (target - self.Q[s][a])
+
 
 
 # game loop vars
