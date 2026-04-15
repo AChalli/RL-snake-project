@@ -132,8 +132,13 @@ class Environment:
 
         # collect reward direction-> using grid "buckets"
         # Divides by tileSize to get discrete grid coordinates (e.g., "Food is 3 tiles right and 2 tiles down")
-        dx_bucket = (self.reward.core.center[0] - hx) // self.tileSize
-        dy_bucket = (self.reward.core.center[1] - hy) // self.tileSize
+        dx = (self.reward.core.center[0] - hx) // self.tileSize
+        dy = (self.reward.core.center[1] - hy) // self.tileSize
+
+        # Clip the distance so it only sees "Up to 3 tiles away"
+        # Anything further than 3 tiles is just "3" (Far)
+        dx_bucket = np.clip(dx, -3, 3)
+        dy_bucket = np.clip(dy, -3, 3)
 
         return (heading_up, heading_down, heading_left, heading_right,
                 danger_up, danger_down, danger_left, danger_right,
