@@ -99,7 +99,7 @@ class Environment:
 
         # consume reward logic
         if snake.head.center == reward.core.center:
-            stepReward = 10
+            stepReward = 15
             snake.length += 1
             reward.core.center = reward.spawn(snake.body, self.getRandomPos)
         else:
@@ -130,8 +130,7 @@ class Environment:
         danger_left = self.isDanger((hx - self.tileSize, hy))
         danger_right = self.isDanger((hx + self.tileSize, hy))
 
-        # collect reward direction-> using grid "buckets"
-        # Divides by tileSize to get discrete grid coordinates (e.g., "Food is 3 tiles right and 2 tiles down")
+        # collect reward direction old
         dx = (self.reward.core.center[0] - hx) // self.tileSize
         dy = (self.reward.core.center[1] - hy) // self.tileSize
 
@@ -154,6 +153,17 @@ class Environment:
             return True
         return False
 
+    def is_congested(self):
+        hx, hy = self.snake.head.center
+        body_count = 0
+        # Check a 2-tile radius around the head
+        for x in range(-2, 3):
+            for y in range(-2, 3):
+                check_pos = (hx + x * self.tileSize, hy + y * self.tileSize)
+                if check_pos in [bod.center for bod in self.snake.body[1:-1]]:
+                    body_count += 1
+        return body_count > 4  # Returns True if it's getting crowded
+
     def getRandomPos(self):
         return randrange(*self.range), randrange(*self.range)
 
@@ -171,7 +181,7 @@ class Environment:
 
 
 class QLearningAgent:
-    def __init__(self, env, epsilon=1, alpha=0.2, gamma=0.95):
+    def __init__(self, env, epsilon=0.95, alpha=0.2, gamma=0.95):
         self.Q = {} #np.zeros((env.numTiles, env.numTiles, 4))
         self.epsilon = epsilon
         self.alpha = alpha
