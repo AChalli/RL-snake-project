@@ -201,10 +201,10 @@ while run:
     if keys[pygame.K_UP]:
         clockSpeed+=30
     elif keys[pygame.K_DOWN]:
-        if clockSpeed > 0:
+        if clockSpeed > 10:
             clockSpeed-=30
     elif keys[pygame.K_0]:
-        clockSpeed=0
+        clockSpeed=10
 
     action = agent.act(state)
     new_state, reward, done = env.step(action)
