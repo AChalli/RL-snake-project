@@ -50,11 +50,46 @@ class Environment:
         self.windowSize = windowSize
         self.ticDelay = ticDelay
         self.score = 0
+        self.numTiles = windowSize // tileSize
         #self.done = True
         self.screen = pygame.display.set_mode([windowSize] * 2)
 
-    def step(self):
+    def step(self, action):
         print("no step")
+
+    def getState(self):
+        # collect snake direction
+        heading_up = self.snake.direction.y < 0
+        heading_down = self.snake.direction.y > 0
+        heading_left = self.snake.direction.x < 0
+        heading_right = self.snake.direction.x > 0
+
+        # collect danger / wall or body direction
+        hx, hy = self.snake.head.center
+        danger_up = self.isDanger((hx, hy - self.tileSize))
+        danger_down = self.isDanger((hx, hy + self.tileSize))
+        danger_left = self.isDanger((hx - self.tileSize, hy))
+        danger_right = self.isDanger((hx + self.tileSize, hy))
+
+        # collect reward direction
+        food_up = self.snake.head.center[1] > self.reward.core.center[1]
+        food_down = self.snake.head.center[1] < self.reward.core.center[1]
+        food_left = self.snake.head.center[0] > self.reward.core.center[0]
+        food_right = self.snake.head.center[0] < self.reward.core.center[0]
+
+        return (heading_up, heading_down, heading_left, heading_right,
+                danger_up, danger_down, danger_left, danger_right,
+                food_left, food_right, food_up, food_down)
+
+    def isDanger(self, pos):
+        x, y = pos
+        # wall check
+        if x < 0 or x >= self.windowSize or y < 0 or y >= self.windowSize:
+            return True
+        # body check
+        if pos in [bod.center for bod in self.snake.body]:
+            return True
+        return False
 
     def getRandomPos(self):
         return randrange(*self.range), randrange(*self.range)
@@ -75,7 +110,7 @@ class Environment:
 
 class QLearningAgent:
     def __init__(self, env, epsilon=0.1, alpha=0.5, gamma=1.0):
-        self.Q = np.zeros((env.rows, env.cols, 4))
+        self.Q = np.zeros((env.numTiles, env.numTiles, 4))
         self.epsilon = epsilon
         self.alpha = alpha
         self.gamma = gamma
