@@ -87,7 +87,7 @@ class Environment:
         if snake.head.left < 0 or snake.head.right > self.windowSize or snake.head.top < 0 or snake.head.bottom > self.windowSize or snake.selfEat():
             done = True
             stepReward = -10
-            self.rerun()
+            #self.rerun()
             return self.getState(), stepReward, done
 
         # consume reward logic
@@ -96,7 +96,15 @@ class Environment:
             snake.length += 1
             reward.core.center = reward.spawn(snake.body, self.getRandomPos)
         else:
-            stepReward = -1 # small step penalty
+            stepReward = -0.08 # small step penalty
+
+        #check distance to wall
+        near_edge= (snake.head.left <= self.tileSize or
+                    snake.head.right >= self.windowSize - self.tileSize or
+                    snake.head.top <= self.tileSize or
+                    snake.head.bottom >= self.windowSize-self.tileSize)
+        if near_edge:
+            stepReward -=0.3
 
         return self.getState(), stepReward, done
 
@@ -192,6 +200,8 @@ env = Environment(800, 100, 40)
 agent = QLearningAgent(env)
 state = env.getState()
 clockSpeed = 10
+episode = 0
+episode_scores = []
 
 while run:
     for event in pygame.event.get():
@@ -210,14 +220,32 @@ while run:
     new_state, reward, done = env.step(action)
     agent.update(state, action, reward, new_state, done)
     state = new_state
+
+    # episode logic
+    if done:
+        episode_scores.append(env.snake.length -1)
+        episode+=1
+
+        env.rerun()
+
+        state = env.getState()
+
     agent.epsilon = max(0.01, agent.epsilon * 0.995)
 
     env.render()
     # score & episode label
     score_text = score_font.render(f"Score: {env.snake.length - 1}", True, (255, 255, 255))
-    episode_text = score_font.render(f"Episode:", True, (200, 255, 0))
+    episode_text = score_font.render(f"Episode: {episode}", True, (200, 255, 0))
+    # in the render / score section
+    if len(episode_scores) > 0:
+        recent = episode_scores[-50:]
+        avg = sum(recent) / len(recent)
+    else:
+        avg = 0.0
+    average_text = score_font.render(f"Avg: {avg:.1f}", True, (0, 255, 200))
     env.screen.blit(score_text, (10, 10))  # top-left corner, 10px padding
-    env.screen.blit(episode_text, (10,40)) #just under score
+    env.screen.blit(episode_text, (10,40))
+    env.screen.blit(average_text, (10, 70))
     pygame.display.update()
     clock.tick(clockSpeed)
 pygame.quit()
