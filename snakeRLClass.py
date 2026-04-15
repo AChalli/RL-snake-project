@@ -55,7 +55,19 @@ class Environment:
         self.screen = pygame.display.set_mode([windowSize] * 2)
 
     def step(self, action):
-        print("no step")
+        if action == 0:
+            snake.direction.y = -env.tileSize
+            snake.direction.x = 0
+        elif action == 1:
+            snake.direction.y = env.tileSize
+            snake.direction.x = 0
+        elif action == 2:
+            snake.direction.x = -env.tileSize
+            snake.direction.y = 0
+        elif action == 3:
+            snake.direction.x = env.tileSize
+            snake.direction.y = 0
+
 
     def getState(self):
         # collect snake direction
@@ -149,25 +161,6 @@ while run:
 
     snake = env.snake
     reward = env.reward
-
-    # controls
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_UP] and dirs[pygame.K_UP]:
-        snake.direction.y = -env.tileSize
-        snake.direction.x = 0
-        dirs = {pygame.K_UP: 1, pygame.K_DOWN: 0, pygame.K_LEFT: 1, pygame.K_RIGHT: 1}
-    elif keys[pygame.K_DOWN] and dirs[pygame.K_DOWN]:
-        snake.direction.y = env.tileSize
-        snake.direction.x = 0
-        dirs = {pygame.K_UP: 0, pygame.K_DOWN: 1, pygame.K_LEFT: 1, pygame.K_RIGHT: 1}
-    elif keys[pygame.K_LEFT] and dirs[pygame.K_LEFT]:
-        snake.direction.x = -env.tileSize
-        snake.direction.y = 0
-        dirs = {pygame.K_UP: 1, pygame.K_DOWN: 1, pygame.K_LEFT: 1, pygame.K_RIGHT: 0}
-    elif keys[pygame.K_RIGHT] and dirs[pygame.K_RIGHT]:
-        snake.direction.x = env.tileSize
-        snake.direction.y = 0
-        dirs = {pygame.K_UP: 1, pygame.K_DOWN: 1, pygame.K_LEFT: 0, pygame.K_RIGHT: 1}
 
     if env.snake.head.left < 0 or env.snake.head.right > env.windowSize or env.snake.head.top < 0 or env.snake.head.bottom > env.windowSize or env.snake.selfEat():
         env.rerun()
