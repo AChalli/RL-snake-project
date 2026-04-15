@@ -153,7 +153,7 @@ class Environment:
 
 
 class QLearningAgent:
-    def __init__(self, env, epsilon=0.1, alpha=0.5, gamma=1.0):
+    def __init__(self, env, epsilon=1, alpha=0.5, gamma=1.0):
         self.Q = {} #np.zeros((env.numTiles, env.numTiles, 4))
         self.epsilon = epsilon
         self.alpha = alpha
@@ -191,21 +191,30 @@ score_font = pygame.font.SysFont(None, 36)  # None = default font, 36 = size
 env = Environment(800, 100, 40)
 agent = QLearningAgent(env)
 state = env.getState()
+clockSpeed = 10
 
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exit()
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP]:
+        clockSpeed+=30
+    elif keys[pygame.K_DOWN]:
+        clockSpeed-=30
 
     action = agent.act(state)
     new_state, reward, done = env.step(action)
     agent.update(state, action, reward, new_state, done)
     state = new_state
+    agent.epsilon = max(0.01, agent.epsilon * 0.995)
 
     env.render()
-    # score label
+    # score & episode label
     score_text = score_font.render(f"Score: {env.snake.length - 1}", True, (255, 255, 255))
+    episode_text = score_font.render(f"Episode:", True, (200, 255, 0))
     env.screen.blit(score_text, (10, 10))  # top-left corner, 10px padding
+    env.screen.blit(episode_text, (10,40)) #just under score
     pygame.display.update()
-    clock.tick(10)
+    clock.tick(clockSpeed)
 pygame.quit()
