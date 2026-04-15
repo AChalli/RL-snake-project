@@ -8,7 +8,7 @@ class Snake:
         self.head = pygame.rect.Rect([0, 0, tileSize-2, tileSize-2]) # snake sprite = basic rectangle
         self.head.center = pos
         self.body = [self.head.copy()] #snake body
-        self.direction = pygame.Vector2(0,0)
+        self.direction = pygame.Vector2(np.random.randint(0,1),np.random.randint(0,1))
         self.length = 1
 
     def move(self, direction):
@@ -51,22 +51,47 @@ class Environment:
         self.ticDelay = ticDelay
         self.score = 0
         self.numTiles = windowSize // tileSize
-        #self.done = True
         self.screen = pygame.display.set_mode([windowSize] * 2)
 
     def step(self, action):
+        snake = self.snake
+        reward = self.reward
+        stepReward = 0 #reward for next step
+        done = False
+
+        #convert action into snake movement
         if action == 0:
-            snake.direction.y = -env.tileSize
+            snake.direction.y = -self.tileSize
             snake.direction.x = 0
         elif action == 1:
-            snake.direction.y = env.tileSize
+            snake.direction.y = self.tileSize
             snake.direction.x = 0
         elif action == 2:
-            snake.direction.x = -env.tileSize
+            snake.direction.x = -self.tileSize
             snake.direction.y = 0
         elif action == 3:
-            snake.direction.x = env.tileSize
+            snake.direction.x = self.tileSize
             snake.direction.y = 0
+        #call movement in pygame
+        snake.move(snake.direction)
+
+        #check for death and rerun if dead
+        if snake.head.left < 0 or snake.head.right > self.windowSize or snake.head.top < 0 or snake.head.bottom > self.windowSize or snake.selfEat():
+            done = True
+            stepReward = -10
+            self.rerun()
+            return self.getState(), stepReward, done
+
+        # consume reward logic
+        if snake.head.center == reward.core.center:
+            stepReward = 10
+            snake.length += 1
+            reward.core.center = reward.spawn(snake.body, self.getRandomPos)
+        else:
+            stepReward = -1 # small step penalty
+
+        return self.getState(), stepReward, done
+
 
 
     def getState(self):
@@ -110,7 +135,6 @@ class Environment:
         self.snake.death()
         self.snake.head.center, self.reward.core.center = self.getRandomPos(), self.getRandomPos()
         self.score = 0
-        #self.done = True
         return 1
 
     def render(self):
@@ -122,17 +146,23 @@ class Environment:
 
 class QLearningAgent:
     def __init__(self, env, epsilon=0.1, alpha=0.5, gamma=1.0):
-        self.Q = np.zeros((env.numTiles, env.numTiles, 4))
+        self.Q = {} #np.zeros((env.numTiles, env.numTiles, 4))
         self.epsilon = epsilon
         self.alpha = alpha
         self.gamma = gamma
+        self.env = env
 
     def act(self, s):
         if np.random.rand() < self.epsilon:
             return np.random.randint(4)
-        return int(np.argmax(self.Q[s]))
+        return int(np.argmax(self.Q.get(s, np.zeros(4))))
 
     def update(self, s, a, r, s2, done):
+        if s not in self.Q:
+            self.Q[s] = np.zeros(4)
+        if s2 not in self.Q:
+            self.Q[s2] = np.zeros(4)
+
         if done:
             target = r
         else:
@@ -147,7 +177,6 @@ pygame.init()
 run = True
 clock = pygame.time.Clock()
 time = 0
-dirs = {pygame.K_UP: 1, pygame.K_DOWN: 1, pygame.K_LEFT: 1, pygame.K_RIGHT: 1}
 score_font = pygame.font.SysFont(None, 36)  # None = default font, 36 = size
 
 #define environment
@@ -161,16 +190,6 @@ while run:
 
     snake = env.snake
     reward = env.reward
-
-    if env.snake.head.left < 0 or env.snake.head.right > env.windowSize or env.snake.head.top < 0 or env.snake.head.bottom > env.windowSize or env.snake.selfEat():
-        env.rerun()
-
-    # consume reward logic
-    if snake.head.center == reward.core.center:
-        snake.length += 1
-        reward.core.center = reward.spawn(snake.body, env.getRandomPos)
-
-    snake.move(snake.direction)
 
     # score label
     score_text = score_font.render(f"Score: {env.snake.length - 1}", True, (255, 255, 255))
