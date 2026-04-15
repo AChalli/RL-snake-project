@@ -189,16 +189,20 @@ score_font = pygame.font.SysFont(None, 36)  # None = default font, 36 = size
 
 #define environment
 env = Environment(800, 100, 40)
+agent = QLearningAgent(env)
+state = env.getState()
 
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exit()
+
+    action = agent.act(state)
+    new_state, reward, done = env.step(action)
+    agent.update(state, action, reward, new_state, done)
+    state = new_state
+
     env.render()
-
-    snake = env.snake
-    reward = env.reward
-
     # score label
     score_text = score_font.render(f"Score: {env.snake.length - 1}", True, (255, 255, 255))
     env.screen.blit(score_text, (10, 10))  # top-left corner, 10px padding
