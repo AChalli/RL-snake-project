@@ -8,7 +8,9 @@ class Snake:
         self.head = pygame.rect.Rect([0, 0, tileSize-2, tileSize-2]) # snake sprite = basic rectangle
         self.head.center = pos
         self.body = [self.head.copy()] #snake body
-        self.direction = pygame.Vector2(np.random.randint(0,1),np.random.randint(0,1))
+        starts = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        start = starts[np.random.randint(4)]
+        self.direction = pygame.Vector2(start[0] * tileSize, start[1] * tileSize)
         self.length = 1
 
     def move(self, direction):
@@ -59,17 +61,23 @@ class Environment:
         stepReward = 0 #reward for next step
         done = False
 
+        #opposite direction restriction:
+        heading_up = self.snake.direction.y < 0
+        heading_down = self.snake.direction.y > 0
+        heading_left = self.snake.direction.x < 0
+        heading_right = self.snake.direction.x > 0
+
         #convert action into snake movement
-        if action == 0:
+        if action == 0 and not heading_down:
             snake.direction.y = -self.tileSize
             snake.direction.x = 0
-        elif action == 1:
+        elif action == 1 and not heading_up:
             snake.direction.y = self.tileSize
             snake.direction.x = 0
-        elif action == 2:
+        elif action == 2 and not heading_right:
             snake.direction.x = -self.tileSize
             snake.direction.y = 0
-        elif action == 3:
+        elif action == 3 and not heading_left:
             snake.direction.x = self.tileSize
             snake.direction.y = 0
         #call movement in pygame
