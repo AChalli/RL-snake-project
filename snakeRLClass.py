@@ -80,8 +80,15 @@ class Environment:
         elif action == 3 and not heading_left:
             snake.direction.x = self.tileSize
             snake.direction.y = 0
+
+        #get s1 distance to food
+        s1_dist = abs(snake.head.center[0] - reward.core.center[0]) + abs(snake.head.center[1] - reward.core.center[1])
+
         #call movement in pygame
         snake.move(snake.direction)
+
+        #get s2 distance to food (post movement)
+        s2_dist = abs(snake.head.center[0] - reward.core.center[0]) + abs(snake.head.center[1] - reward.core.center[1])
 
         #check for death and rerun if dead
         if snake.head.left < 0 or snake.head.right > self.windowSize or snake.head.top < 0 or snake.head.bottom > self.windowSize or snake.selfEat():
@@ -96,15 +103,14 @@ class Environment:
             snake.length += 1
             reward.core.center = reward.spawn(snake.body, self.getRandomPos)
         else:
-            stepReward = -0.08 # small step penalty
-
-        #check distance to wall
-        near_edge= (snake.head.left <= self.tileSize or
-                    snake.head.right >= self.windowSize - self.tileSize or
-                    snake.head.top <= self.tileSize or
-                    snake.head.bottom >= self.windowSize-self.tileSize)
-        if near_edge:
-            stepReward -=0.3
+           #old: stepReward = -0.08 # small step penalty
+           #new: distance based shaping instead of constant step penalty
+           if s2_dist < s1_dist:
+               stepReward = 0.1  # Got closer
+           elif s2_dist > s1_dist:
+               stepReward = -0.1  # Moved further away
+           else:
+               stepReward =-0.03
 
         return self.getState(), stepReward, done
 
@@ -124,15 +130,14 @@ class Environment:
         danger_left = self.isDanger((hx - self.tileSize, hy))
         danger_right = self.isDanger((hx + self.tileSize, hy))
 
-        # collect reward direction
-        food_up = self.snake.head.center[1] > self.reward.core.center[1]
-        food_down = self.snake.head.center[1] < self.reward.core.center[1]
-        food_left = self.snake.head.center[0] > self.reward.core.center[0]
-        food_right = self.snake.head.center[0] < self.reward.core.center[0]
+        # collect reward direction-> using grid "buckets"
+        # Divides by tileSize to get discrete grid coordinates (e.g., "Food is 3 tiles right and 2 tiles down")
+        dx_bucket = (self.reward.core.center[0] - hx) // self.tileSize
+        dy_bucket = (self.reward.core.center[1] - hy) // self.tileSize
 
         return (heading_up, heading_down, heading_left, heading_right,
                 danger_up, danger_down, danger_left, danger_right,
-                food_left, food_right, food_up, food_down)
+                dx_bucket, dy_bucket)
 
     def isDanger(self, pos):
         x, y = pos
@@ -161,7 +166,7 @@ class Environment:
 
 
 class QLearningAgent:
-    def __init__(self, env, epsilon=1, alpha=0.5, gamma=1.0):
+    def __init__(self, env, epsilon=1, alpha=0.2, gamma=0.95):
         self.Q = {} #np.zeros((env.numTiles, env.numTiles, 4))
         self.epsilon = epsilon
         self.alpha = alpha
@@ -229,8 +234,7 @@ while run:
         env.rerun()
 
         state = env.getState()
-
-    agent.epsilon = max(0.01, agent.epsilon * 0.995)
+        agent.epsilon = max(0.05, agent.epsilon * 0.997) # decrease exploration over episodes
 
     env.render()
     # score & episode label
