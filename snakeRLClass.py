@@ -139,9 +139,12 @@ class Environment:
         dx_bucket = np.clip(dx, -3, 3)
         dy_bucket = np.clip(dy, -3, 3)
 
+        #check for potential self eat
+        crowded = self.is_congested()
+
         return (heading_up, heading_down, heading_left, heading_right,
                 danger_up, danger_down, danger_left, danger_right,
-                dx_bucket, dy_bucket)
+                dx_bucket, dy_bucket, crowded)
 
     def isDanger(self, pos):
         x, y = pos
