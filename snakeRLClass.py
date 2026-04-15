@@ -204,7 +204,7 @@ score_font = pygame.font.SysFont(None, 36)  # None = default font, 36 = size
 env = Environment(800, 100, 40)
 agent = QLearningAgent(env)
 state = env.getState()
-clockSpeed = 10
+clockSpeed = 10000
 episode = 0
 episode_scores = []
 
