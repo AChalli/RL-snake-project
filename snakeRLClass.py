@@ -212,6 +212,7 @@ state = env.getState()
 clockSpeed = 10000
 episode = 0
 episode_scores = []
+high_score=0
 
 while run:
     for event in pygame.event.get():
@@ -233,11 +234,15 @@ while run:
 
     # episode logic
     if done:
+        curr_score = env.snake.length - 1
         episode_scores.append(env.snake.length -1)
         episode+=1
 
-        env.rerun()
+        #Check for new high score
+        if curr_score > high_score:
+            high_score = curr_score
 
+        env.rerun()
         state = env.getState()
         agent.epsilon = max(0.05, agent.epsilon * 0.997) # decrease exploration over episodes
 
@@ -252,9 +257,11 @@ while run:
     else:
         avg = 0.0
     average_text = score_font.render(f"Avg: {avg:.1f}", True, (0, 255, 200))
+    high_score_text = score_font.render(f"Best: {high_score}", True, (255, 215, 0))
     env.screen.blit(score_text, (10, 10))  # top-left corner, 10px padding
     env.screen.blit(episode_text, (10,40))
     env.screen.blit(average_text, (10, 70))
+    env.screen.blit(high_score_text, (10, 100))  # Placed below the average
     pygame.display.update()
     clock.tick(clockSpeed)
 pygame.quit()
