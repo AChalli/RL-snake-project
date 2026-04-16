@@ -195,7 +195,7 @@ class QLearningAgent:
         self.Q[s][a] += self.alpha * (target - self.Q[s][a])
 
 class DoubleQLearningAgent:
-    def __init__(self, env, epsilon=1, alpha=0.2, gamma=0.95):
+    def __init__(self, env, epsilon=1, alpha=0.2, gamma=0.99):
         self.Q1 = {}
         self.Q2 = {}
         self.epsilon = epsilon
@@ -242,7 +242,7 @@ score_font = pygame.font.SysFont(None, 36)  # None = default font, 36 = size
 
 #define environment
 env = Environment(800, 100, 40)
-agent = DoubleQLearningAgent(env)
+agent = QLearningAgent(env)
 
 filename = 'double_q_table.pkl' if isinstance(agent, DoubleQLearningAgent) else 'single_q_table.pkl'
 if os.path.exists(filename):
