@@ -1,6 +1,8 @@
 import pygame
 from random import randrange
 import numpy as np
+import pickle
+import os
 
 class Snake:
     def __init__(self, tileSize, pos):
@@ -221,8 +223,16 @@ score_font = pygame.font.SysFont(None, 36)  # None = default font, 36 = size
 #define environment
 env = Environment(800, 100, 40)
 agent = QLearningAgent(env)
+
+#Load Model Logic
+if os.path.exists('q_table.pkl'):
+    with open('q_table.pkl', 'rb') as f:
+        agent.Q = pickle.load(f)
+    print(f"Loaded saved Q-table with {len(agent.Q)} states!")
+    agent.epsilon = 0.05 # Drop epsilon so it actually uses the learned table
+
 state = env.getState()
-clockSpeed = 10000
+clockSpeed = 10
 episode = 0
 episode_scores = []
 high_score=0
@@ -239,6 +249,17 @@ while run:
             clockSpeed-=30
     elif keys[pygame.K_0]:
         clockSpeed=10
+
+    #save q-table
+    if keys[pygame.K_s]:
+        with open('q_table.pkl', 'wb') as f:
+            pickle.dump(agent.Q, f)
+    # reset q-table
+    elif keys[pygame.K_r]:
+        agent.Q = {}
+        agent.epsilon = 0.97
+        episode = 0
+        print("Brain wiped. Starting over!")
 
     action = agent.act(state)
     new_state, reward, done = env.step(action)
