@@ -99,18 +99,18 @@ class Environment:
 
         # consume reward logic
         if snake.head.center == reward.core.center:
-            stepReward = 15
+            stepReward = 20
             snake.length += 1
             reward.core.center = reward.spawn(snake.body, self.getRandomPos)
         else:
            #old: stepReward = -0.08 # small step penalty
            #new: distance based shaping instead of constant step penalty
            if s2_dist < s1_dist:
-               stepReward = 0.1  # Got closer
+               stepReward = -0.06  # Got closer
            elif s2_dist > s1_dist:
                stepReward = -0.1  # Moved further away
            else:
-               stepReward =-0.03
+               stepReward = -0.08
 
         return self.getState(), stepReward, done
 
@@ -184,7 +184,7 @@ class Environment:
 
 
 class QLearningAgent:
-    def __init__(self, env, epsilon=0.95, alpha=0.2, gamma=0.95):
+    def __init__(self, env, epsilon=0.97, alpha=0.2, gamma=0.95):
         self.Q = {} #np.zeros((env.numTiles, env.numTiles, 4))
         self.epsilon = epsilon
         self.alpha = alpha
@@ -257,7 +257,7 @@ while run:
 
         env.rerun()
         state = env.getState()
-        agent.epsilon = max(0.05, agent.epsilon * 0.997) # decrease exploration over episodes
+        agent.epsilon = max(0.05, agent.epsilon * 0.922) # decrease exploration over episodes
 
     env.render()
     # score & episode label
