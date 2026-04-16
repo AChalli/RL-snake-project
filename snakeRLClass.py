@@ -105,14 +105,14 @@ class Environment:
             snake.length += 1
             reward.core.center = reward.spawn(snake.body, self.getRandomPos)
         else:
-           #old: stepReward = -0.08 # small step penalty
-           #new: distance based shaping instead of constant step penalty
-           if s2_dist < s1_dist:
-               stepReward = -0.06  # Got closer
-           elif s2_dist > s1_dist:
-               stepReward = -0.1  # Moved further away
-           else:
-               stepReward = -0.08
+            stepReward = -0.08
+
+        near_edge = (snake.head.left <= self.tileSize or
+                     snake.head.right >= self.windowSize - self.tileSize or
+                     snake.head.top <= self.tileSize or
+                     snake.head.bottom >= self.windowSize - self.tileSize)
+        if near_edge:
+            stepReward -= 0.3
 
         return self.getState(), stepReward, done
 
@@ -132,21 +132,15 @@ class Environment:
         danger_left = self.isDanger((hx - self.tileSize, hy))
         danger_right = self.isDanger((hx + self.tileSize, hy))
 
-        # collect reward direction old
-        dx = (self.reward.core.center[0] - hx) // self.tileSize
-        dy = (self.reward.core.center[1] - hy) // self.tileSize
-
-        # Clip the distance so it only sees "Up to 3 tiles away"
-        # Anything further than 3 tiles is just "3" (Far)
-        dx_bucket = np.clip(dx, -3, 3)
-        dy_bucket = np.clip(dy, -3, 3)
-
-        #check for potential self eat
-        crowded = self.is_congested()
+        # collect reward direction
+        food_up = self.snake.head.center[1] > self.reward.core.center[1]
+        food_down = self.snake.head.center[1] < self.reward.core.center[1]
+        food_left = self.snake.head.center[0] > self.reward.core.center[0]
+        food_right = self.snake.head.center[0] < self.reward.core.center[0]
 
         return (heading_up, heading_down, heading_left, heading_right,
                 danger_up, danger_down, danger_left, danger_right,
-                dx_bucket, dy_bucket, crowded)
+                food_left, food_right, food_up, food_down)
 
     def isDanger(self, pos):
         x, y = pos
@@ -158,16 +152,6 @@ class Environment:
             return True
         return False
 
-    def is_congested(self):
-        hx, hy = self.snake.head.center
-        body_count = 0
-        # Check a 2-tile radius around the head
-        for x in range(-2, 3):
-            for y in range(-2, 3):
-                check_pos = (hx + x * self.tileSize, hy + y * self.tileSize)
-                if check_pos in [bod.center for bod in self.snake.body[1:-1]]:
-                    body_count += 1
-        return body_count > 4  # Returns True if it's getting crowded
 
     def getRandomPos(self):
         return randrange(*self.range), randrange(*self.range)
@@ -210,6 +194,42 @@ class QLearningAgent:
             target = r + self.gamma * np.max(self.Q[s2])
         self.Q[s][a] += self.alpha * (target - self.Q[s][a])
 
+class DoubleQLearningAgent:
+    def __init__(self, env, epsilon=1, alpha=0.2, gamma=0.95):
+        self.Q1 = {}
+        self.Q2 = {}
+        self.epsilon = epsilon
+        self.alpha = alpha
+        self.gamma = gamma
+        self.env = env
+
+    def act(self, s):
+        if np.random.rand() < self.epsilon:
+            return np.random.randint(4)
+        combined = self.Q1.get(s, np.zeros(4)) + self.Q2.get(s, np.zeros(4))
+        return int(np.argmax(combined))
+
+    def update(self, s, a, r, s2, done):
+        if s not in self.Q1 or s not in self.Q2:
+            self.Q1[s] = np.zeros(4)
+            self.Q2[s] = np.zeros(4)
+        if s2 not in self.Q1 or s2 not in self.Q2:
+            self.Q1[s2] = np.zeros(4)
+            self.Q2[s2] = np.zeros(4)
+
+        if np.random.rand() < 0.5:
+            Q_active, Q_target = self.Q1, self.Q2
+        else:
+            Q_active, Q_target = self.Q2, self.Q1
+
+        if done:
+            target = r
+        else:
+            best_action = np.random.choice(
+                [a for a, v in enumerate(Q_active[s2]) if v == np.max(Q_active[s2])]
+            )
+            target = r + self.gamma * Q_target[s2][best_action]
+        Q_active[s][a] += self.alpha * (target - Q_active[s][a])
 
 
 # game loop vars
@@ -278,7 +298,7 @@ while run:
 
         env.rerun()
         state = env.getState()
-        agent.epsilon = max(0.05, agent.epsilon * 0.922) # decrease exploration over episodes
+        agent.epsilon = max(0.01, agent.epsilon * 0.995) # decrease exploration over episodes
 
     env.render()
     # score & episode label
